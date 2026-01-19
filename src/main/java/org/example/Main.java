@@ -14,11 +14,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.attribute.FileTime;
 import java.time.LocalDate;
+import java.time.Month;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
+    public static LocalDate lastAppPatch = LocalDate.of(2026, Month.JANUARY, 19);
     public static String dataFolderPath = System.getProperty("user.home") + File.separator +"Documents"+"/AppTarkov";
     public static int numberOfFiles = 18;
     static class Items {
@@ -46,9 +49,12 @@ public class Main {
     static class Item {
         @SerializedName("name")
         String name;
+        @SerializedName("shortName")
+        String shortName;
         Item(){}
-        Item(String name){
+        Item(String name, String shortName){
             this.name = name;
+            this.shortName = shortName;
         }
 
         public String getName() {
@@ -59,18 +65,30 @@ public class Main {
             this.name = name;
         }
 
+        public String getShortName() {
+            return shortName;
+        }
+
+        public void setShortName(String shortName) {
+            this.shortName = shortName;
+        }
+
         @Override
         public String toString() {
             return "Item{" +
                     "name='" + name + '\'' +
+                    ", shortName='" + shortName + '\'' +
                     '}';
         }
     }
     public static void CheckLastAPICall(File dataFolder){
+        FileTime fileTime = GetLastModified(dataFolder);
+        System.out.println("\nLast Updated Data: "+fileTime.toString().substring(0,10));
+        System.out.println("Enter 1 to update the data");
+    }
+    public static FileTime GetLastModified(File dataFolder){
         try {
-            FileTime fileTime = Files.getLastModifiedTime(Paths.get(dataFolder.listFiles()[0].getAbsolutePath()));
-            System.out.println("\nLast Updated Data: "+fileTime.toString().substring(0,10));
-            System.out.println("Enter 1 to update the data");
+            return Files.getLastModifiedTime(Paths.get(dataFolder.listFiles()[0].getAbsolutePath()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -90,6 +108,11 @@ public class Main {
         //API(sc.nextLine());
 
         File dataFolder = new File(dataFolderPath);
+        LocalDate lastUpdate = LocalDate.ofInstant(GetLastModified(dataFolder).toInstant(), ZoneId.systemDefault());
+        if(lastUpdate.isBefore(lastAppPatch)){
+            System.out.println("Auto update required!");
+            API();
+        }
         if(!dataFolder.exists() || dataFolder.listFiles()==null){
             System.out.println("Data folder not found!");
             API();
@@ -228,7 +251,7 @@ public class Main {
          */
         System.out.println("Retrieving information, please wait...");
 
-        String query = "{\"query\": \"{ items {name} }\"}";
+        String query = "{\"query\": \"{ items {name shortName} }\"}";
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.tarkov.dev/graphql"))
@@ -311,7 +334,7 @@ public class Main {
                     }
                     Item[] itemArray = gson.fromJson(json, Item[].class);
                     for(Item item : itemArray){
-                        if(item.getName().toLowerCase().contains(itemName.toLowerCase())){
+                        if(item.getName().toLowerCase().contains(itemName.toLowerCase()) || item.getShortName().toLowerCase().contains(itemName.toLowerCase())){
                             tmp.add(item);
                         }
                     }
