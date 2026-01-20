@@ -242,9 +242,9 @@ public class Main {
                 String inputLine;
                 boolean saveLine = false;
 
-                BufferedWriter writer = new BufferedWriter(new FileWriter("C:\\Users\\BYR\\Desktop\\"+questName.replaceAll("\\?","")+".xml"));
+                //BufferedWriter writer = new BufferedWriter(new FileWriter("C:\\Users\\BYR\\Desktop\\"+questName.replaceAll("\\?","")+".xml"));
                 while ((inputLine = in.readLine()) != null) {
-                    writer.write(inputLine+"\n");
+                    //writer.write(inputLine+"\n");
                     if(saveLine){
                         String isKappaRequired = "No";
                         if(inputLine.contains(">Yes<")){
@@ -259,7 +259,7 @@ public class Main {
                         //System.out.println(questName+": Save Line");
                     }
                 }
-                writer.close();
+                //writer.close();
                 in.close();
                 con.disconnect();
 
