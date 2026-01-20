@@ -3,10 +3,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URL;
+import java.net.*;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -194,15 +191,28 @@ public class Main {
                 String inputLine;
                 StringBuffer content = new StringBuffer();
                 boolean saveLine = false;
+                boolean endOfQuests = false;
                 while ((inputLine = in.readLine()) != null) {
                     if(inputLine.contains("span class=\"mw-headline\" id=\"")){
                         saveLine = false;
                     }
                     if(inputLine.contains("id=\"Quests\"") || inputLine.contains("id=\"Hideout\"")){
                         saveLine = true;
+                        if(inputLine.contains("id=\"Hideout\"")){
+                            endOfQuests = true;
+                        }
                     }
                     if(saveLine){
                         inputLine = inputLine.replaceAll("<[^>]+>", "");
+                        if(!inputLine.toLowerCase().contains("quests[]") && !inputLine.toLowerCase().contains("hideout[]") && !inputLine.toLowerCase().contains("story chapter") && !endOfQuests){
+                            String questName = GetQuestName(inputLine);
+                            String wikiURL = "https://escapefromtarkov.fandom.com/wiki/";
+                            //System.out.println(wikiURL);
+                            wikiURL += URLEncoder.encode(questName.replaceAll(" ","_"), "UTF-8");
+                            String additionalInfo = GetWikiQuestPage(wikiURL, questName.replaceAll(" ","_"));
+                            //System.out.println(additionalInfo);
+                            inputLine += " "+additionalInfo;
+                        }
                         content.append(inputLine+"\n");
                     }
                 }
@@ -216,6 +226,61 @@ public class Main {
         } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
+    }
+    public static String GetWikiQuestPage(String url, String questName){
+        URL uri;
+        String result = "ERROR";
+        try {
+            uri = new URL(url);
+            HttpURLConnection con;
+            try {
+
+                con = (HttpURLConnection) uri.openConnection();
+                con.setRequestMethod("GET");
+                BufferedReader in = new BufferedReader(
+                        new InputStreamReader(con.getInputStream()));
+                String inputLine;
+                boolean saveLine = false;
+
+                BufferedWriter writer = new BufferedWriter(new FileWriter("C:\\Users\\BYR\\Desktop\\"+questName.replaceAll("\\?","")+".xml"));
+                while ((inputLine = in.readLine()) != null) {
+                    writer.write(inputLine+"\n");
+                    if(saveLine){
+                        String isKappaRequired = "No";
+                        if(inputLine.contains(">Yes<")){
+                            isKappaRequired = "Yes";
+                        }
+                        String trader = GetTraderName(inputLine);
+                        result = "["+trader+": Kappa -> "+isKappaRequired+"]";
+                        saveLine = false;
+                    }
+                    if(inputLine.contains("<!-- End Google Tag Manager (noscript) -->")){
+                        saveLine = true;
+                        //System.out.println(questName+": Save Line");
+                    }
+                }
+                writer.close();
+                in.close();
+                con.disconnect();
+
+                return result;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (MalformedURLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public static String GetTraderName(String line){
+        String[] traderNames = {
+            "Prapor", "Therapist", "Fence", "Skier", "Peacekeeper", "Mechanic", "Ragman", "Jaeger", "Ref", "Lightkeeper", "BTR Driver"
+        };
+        for (String name : traderNames){
+            if(line.toLowerCase().contains(name.toLowerCase())){
+                return name;
+            }
+        }
+        return "Not found";
     }
     public static Item ItemMenuSelection(ArrayList<Item> items){
         System.out.println();
@@ -237,6 +302,12 @@ public class Main {
                 System.out.println("ERROR: Introduce a valid number");
             }
         }while (true);
+    }
+    public static String GetQuestName(String line){
+        String tmp = line;
+        tmp = tmp.replaceAll(".*for the quest","").trim();
+        tmp = tmp.replaceAll("\\(.*","").trim();
+        return tmp;
     }
     public static void API(){ // Only call to update cached information
         /*
