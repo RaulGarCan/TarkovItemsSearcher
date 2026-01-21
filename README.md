@@ -1,3 +1,5 @@
+JDK 22 MINIMUM REQUIRED TO RUN: https://www.oracle.com/java/technologies/javase/jdk22-archive-downloads.html
+
 CLI Desktop application to help you with your Diogenes Tarkov Syndrome.
 
 You can look for any Quest and Hideout related items in Escape From Tarkov by just typing the item's name.
