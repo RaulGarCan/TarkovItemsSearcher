@@ -178,14 +178,12 @@ public class Main {
             }
         }while (exec);
     }
-    public static String GetWikiPage(String url){
-        URL uri;
+    public static String GetWikiPage(String link){
+        URL url;
         try {
-            uri = new URL(url);
-            HttpURLConnection con;
+            url = new URL(link);
+            HttpURLConnection con = CreateURLConnection(url);
             try {
-                con = (HttpURLConnection) uri.openConnection();
-                con.setRequestMethod("GET");
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(con.getInputStream()));
                 String inputLine;
@@ -227,16 +225,25 @@ public class Main {
             throw new RuntimeException(e);
         }
     }
-    public static String GetWikiQuestPage(String url, String questName){
-        URL uri;
+    public static HttpURLConnection CreateURLConnection(URL uri){
+        HttpURLConnection con;
+        try {
+            con = (HttpURLConnection) uri.openConnection();
+            con.setRequestProperty("Method","GET");
+            con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 OPR/125.0.0.0");
+            //System.out.println("Response Code: "+con.getResponseCode());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return con;
+    }
+    public static String GetWikiQuestPage(String link, String questName){
+        URL url;
         String result = "ERROR";
         try {
-            uri = new URL(url);
-            HttpURLConnection con;
+            url = new URL(link);
+            HttpURLConnection con = CreateURLConnection(url);
             try {
-
-                con = (HttpURLConnection) uri.openConnection();
-                con.setRequestMethod("GET");
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(con.getInputStream()));
                 String inputLine;
@@ -262,7 +269,6 @@ public class Main {
                 //writer.close();
                 in.close();
                 con.disconnect();
-
                 return result;
             } catch (IOException e) {
                 throw new RuntimeException(e);
