@@ -94,7 +94,7 @@ public class Main {
         try {
             new ProcessBuilder("cmd","/c","cls").inheritIO().start().waitFor();
         } catch (InterruptedException | IOException e) {
-            System.out.println(e);
+            System.out.println(e.getMessage());
         }
     }
     public static void main(String[] args) {
@@ -207,7 +207,7 @@ public class Main {
                             String wikiURL = "https://escapefromtarkov.fandom.com/wiki/";
                             //System.out.println(wikiURL);
                             wikiURL += URLEncoder.encode(questName.replaceAll(" ","_"), "UTF-8");
-                            String additionalInfo = GetWikiQuestPage(wikiURL, questName.replaceAll(" ","_"));
+                            String additionalInfo = "["+GetWikiQuestPage(wikiURL, questName.replaceAll(" ","_"))+"]";
                             //System.out.println(additionalInfo);
                             inputLine += " "+additionalInfo;
                         }
@@ -219,10 +219,11 @@ public class Main {
 
                 return content.toString();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                System.out.println(e.getMessage());
+                return "ERROR: ITEM WIKI PAGE NOT FOUND -> "+link;
             }
         } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
+            return "ERROR: URL MALFORMED -> "+link;
         }
     }
     public static HttpURLConnection CreateURLConnection(URL uri){
@@ -233,7 +234,8 @@ public class Main {
             con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 OPR/125.0.0.0");
             //System.out.println("Response Code: "+con.getResponseCode());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println(e.getMessage());
+            return null;
         }
         return con;
     }
@@ -243,6 +245,9 @@ public class Main {
         try {
             url = new URL(link);
             HttpURLConnection con = CreateURLConnection(url);
+            if(con==null){
+                return result;
+            }
             try {
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(con.getInputStream()));
@@ -257,9 +262,11 @@ public class Main {
                         if(inputLine.contains(">Yes<")){
                             isKappaRequired = "Yes";
                         }
-                        String trader = GetTraderName(inputLine);
-                        result = "["+trader+": Kappa -> "+isKappaRequired+"]";
-                        saveLine = false;
+                        if(inputLine.contains(">Given by<")){
+                            String trader = GetTraderName(inputLine);
+                            result = trader+": Kappa -> "+isKappaRequired;
+                            saveLine = false;
+                        }
                     }
                     if(inputLine.contains("<!-- End Google Tag Manager (noscript) -->")){
                         saveLine = true;
@@ -271,10 +278,10 @@ public class Main {
                 con.disconnect();
                 return result;
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                return "ERROR: QUEST WIKI PAGE NOT FOUND -> "+link;
             }
         } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
+            return "ERROR: URL MALFORMED -> "+link;
         }
     }
     public static String GetTraderName(String line){
@@ -312,7 +319,9 @@ public class Main {
     public static String GetQuestName(String line){
         String tmp = line;
         tmp = tmp.replaceAll(".*for the quest","").trim();
+        tmp = tmp.replaceAll(".*in the quest","").trim();
         tmp = tmp.replaceAll("\\(.*","").trim();
+        tmp = tmp.replaceAll("\\s+\\([^)]+\\)$", "").trim();
         return tmp;
     }
     public static void API(){ // Only call to update cached information
